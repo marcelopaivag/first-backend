@@ -3,12 +3,19 @@ const bcrypt = require('bcrypt')
 
 const signUp = async (req, res) => {
     try {
+        const { email, password } = req.body
+        const existingUser = await User.findOne({email})
+        if (existingUser) {
+            return res.json({
+                message: "User already exists"
+            })
+        }
         const user = new User(req.body)
-        user.hashPassword(req.body.password)
-        const resp = await user.save()
+        user.hashPassword(password)
+        await user.save()
         return res.json({
             message: 'User was created successfully',
-            detail: resp
+            detail: user.onSignUpGenerateJWT()
         })
     } catch (error) {
         return res.json({
@@ -22,13 +29,23 @@ const logIn = async (req, res) => {
     try {
         const { email, password } = req.body
         const userFound = await User.findOne({ email })
-        const isCorrectPassword = bcrypt.compare(password, userFound.password)
-        if (isCorrectPassword) {
+        if (!userFound) {
+            return res.json({
+                message: "user not found"
+            })
+        }
+        const isCorrectPassword = bcrypt.compareSync(password, userFound.password)
+        if (!isCorrectPassword) {
+            return res.json({
+                message: 'wrong password'
+            })
+        }
             return res.json({
                 message: 'OK',
                 detail: { user: userFound, token: userFound.generateJWT() }
+
             })
-        }
+
     } catch (error) {
         return res.json({
             message: 'Error',

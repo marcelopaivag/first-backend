@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const crypto = require('crypto')
+const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const secret = process.env.SECRET_JWT
 
@@ -10,14 +10,10 @@ const userSchema = new mongoose.Schema({
     email: { type: String },
     phone: { type: Number},
     password: { type: String },
-    salt: String
 })
 
 userSchema.methods.hashPassword = function (password) {
-    this.salt = crypto.randomBytes(16).toString('hex')
-    this.password = crypto
-        .pbkdf2Sync(password, this.salt, 10000, 512, 'sha512')
-        .toString('hex')
+    this.password = bcrypt.hashSync(password, 16)
 }
 
 userSchema.methods.generateJWT = function () {
